@@ -1,0 +1,248 @@
+cdietschrun: i want to make a wow tcg database and api that will let users login, browse cards, manage their collection of cards, create decks, and find prices for individual cards or entire decks. I want to also use c# for the backend. 
+
+GitHub Copilot: Sure, let's break down the steps to create a WoW TCG database and API using C#:
+
+1. **Set up the project:**
+   - Create a new ASP.NET Core Web API project.
+   - Set up Entity Framework Core for database access.
+
+2. **Define the database models:**
+   - Create models for Users, Cards, Collections, Decks, and Prices.
+
+3. **Create the database context:**
+   - Define the DbContext class to manage the database connection and entity sets.
+
+4. **Set up authentication:**
+   - Implement user authentication using ASP.NET Core Identity.
+
+5. **Create the API controllers:**
+   - Implement controllers for user management, card browsing, collection management, deck creation, and price lookup.
+
+6. **Implement the services:**
+   - Create services to handle the business logic for each feature.
+
+7. **Configure the API routes:**
+   - Define the routes for each API endpoint.
+
+8. **Test the API:**
+   - Write unit tests for the API endpoints.
+
+Here's a basic outline of the code:
+
+### 1. Set up the project
+Create a new ASP.NET Core Web API project:
+```sh
+dotnet new webapi -n WoWTcgApi
+cd WoWTcgApi
+```
+
+### 2. Define the database models
+Create models for Users, Cards, Collections, Decks, and Prices.
+
+```csharp
+// Models/User.cs
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; }
+    public string Email { get; set; }
+    public string PasswordHash { get; set; }
+    public ICollection<Collection> Collections { get; set; }
+}
+
+// Models/Card.cs
+public class Card
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string Rarity { get; set; }
+    public decimal Price { get; set; }
+}
+
+// Models/Collection.cs
+public class Collection
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public User User { get; set; }
+    public ICollection<Card> Cards { get; set; }
+}
+
+// Models/Deck.cs
+public class Deck
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public int UserId { get; set; }
+    public User User { get; set; }
+    public ICollection<Card> Cards { get; set; }
+}
+
+// Models/Price.cs
+public class Price
+{
+    public int Id { get; set; }
+    public int CardId { get; set; }
+    public Card Card { get; set; }
+    public decimal Value { get; set; }
+}
+```
+
+### 3. Create the database context
+Define the DbContext class.
+
+```csharp
+// Data/ApplicationDbContext.cs
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<User> Users { get; set; }
+    public DbSet<Card> Cards { get; set; }
+    public DbSet<Collection> Collections { get; set; }
+    public DbSet<Deck> Decks { get; set; }
+    public DbSet<Price> Prices { get; set; }
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+}
+```
+
+### 4. Set up authentication
+Implement user authentication using ASP.NET Core Identity.
+
+```csharp
+// Startup.cs
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+    services.AddIdentity<User, IdentityRole>()
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
+
+    services.AddControllers();
+    services.AddAuthentication();
+    services.AddAuthorization();
+}
+```
+
+### 5. Create the API controllers
+Implement controllers for user management, card browsing, collection management, deck creation, and price lookup.
+
+```csharp
+// Controllers/UsersController.cs
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    private readonly UserManager<User> _userManager;
+
+    public UsersController(UserManager<User> userManager)
+    {
+        _userManager = userManager;
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterModel model)
+    {
+        var user = new User { UserName = model.Username, Email = model.Email };
+        var result = await _userManager.CreateAsync(user, model.Password);
+
+        if (result.Succeeded)
+        {
+            return Ok();
+        }
+
+        return BadRequest(result.Errors);
+    }
+
+    // Additional actions for login, etc.
+}
+
+// Controllers/CardsController.cs
+[ApiController]
+[Route("api/[controller]")]
+public class CardsController : ControllerBase
+{
+    private readonly ApplicationDbContext _context;
+
+    public CardsController(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetCards()
+    {
+        var cards = await _context.Cards.ToListAsync();
+        return Ok(cards);
+    }
+
+    // Additional actions for card management
+}
+
+// Additional controllers for Collections, Decks, and Prices
+```
+
+### 6. Implement the services
+Create services to handle the business logic for each feature.
+
+```csharp
+// Services/CardService.cs
+public class CardService
+{
+    private readonly ApplicationDbContext _context;
+
+    public CardService(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<Card>> GetCardsAsync()
+    {
+        return await _context.Cards.ToListAsync();
+    }
+
+    // Additional methods for card management
+}
+```
+
+### 7. Configure the API routes
+Define the routes for each API endpoint in the controllers.
+
+### 8. Test the API
+Write unit tests for the API endpoints.
+
+```csharp
+// Tests/CardsControllerTests.cs
+public class CardsControllerTests
+{
+    [Fact]
+    public async Task GetCards_ReturnsOkResult_WithListOfCards()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDatabase")
+            .Options;
+
+        using var context = new ApplicationDbContext(options);
+        context.Cards.Add(new Card { Name = "Test Card" });
+        context.SaveChanges();
+
+        var controller = new CardsController(context);
+
+        // Act
+        var result = await controller.GetCards();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var cards = Assert.IsType<List<Card>>(okResult.Value);
+        Assert.Single(cards);
+    }
+}
+```
+
+This is a basic outline to get you started. You can expand on this by adding more features, improving error handling, and refining the business logic.

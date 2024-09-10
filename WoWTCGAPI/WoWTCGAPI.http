@@ -1,0 +1,6 @@
+@WoWTCGAPI_HostAddress = http://localhost:5167
+
+GET {{WoWTCGAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
