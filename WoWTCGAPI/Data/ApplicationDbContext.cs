@@ -12,4 +12,10 @@ public class ApplicationDbContext : DbContext
         : base(options)
     {
     }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.UseInMemoryDatabase("wowtcg", null);
+    }
 }
