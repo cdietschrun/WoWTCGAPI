@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
 
 [ApiController]
 [Route("api/card")]
@@ -34,6 +35,22 @@ public class CardsController : ControllerBase
     {
         var cards = await _context.Cards.ToListAsync();
         return Ok(cards);
+    }
+
+    /// <summary>
+    /// Creates a new card.
+    /// </summary>
+    /// <param name="card">The card information to create.</param>
+    /// <returns>The created card.</returns>
+    [HttpPost]
+    [SwaggerResponse(statusCode: StatusCodes.Status201Created, type: null, description: "ID of the created card.")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateCard([FromBody] Card card)
+    {
+        _context.Cards.Add(card);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetCards), new { id = card.Id }, card);
     }
 
     // Additional actions for card management
